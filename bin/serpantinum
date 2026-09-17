@@ -127,6 +127,7 @@ show_help() {
     echo "  serpantinum msg open network wifi"
     echo "  serpantinum msg toggle launcher"
     echo "  serpantinum msg toggle clipboard"
+    echo "  serpantinum msg toggle session"
     echo "  serpantinum weather --current-temp"
     echo "  serpantinum kill"
     echo ""
@@ -140,6 +141,7 @@ show_launch_help() {
     echo "$(t "cli.launch_help.available_targets")"
     echo "  start            $(t "cli.launch_help.target_start")"
     echo "  widgetredactor  $(t "cli.launch_help.target_widgetredactor")"
+    echo "  session          Power & session management overlay"
     echo ""
     echo "$(t "cli.options")"
     echo "  -h, --help      $(t "cli.help_desc")"
@@ -272,6 +274,9 @@ if [[ "$1" == "launch" ]]; then
             ;;
         widgetredactor)
             QML_NAME="WidgetRedactor"
+            ;;
+        session|powermenu)
+            QML_NAME="SessionOverlay"
             ;;
         *)
             echo "$(t "cli.error_unknown_target" TARGET="$2")"

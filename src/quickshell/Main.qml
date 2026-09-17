@@ -123,6 +123,17 @@ PanelWindow {
                 return;
             }
 
+            if (cmd === "session" || targetWidget === "session" || cmd === "powermenu" || targetWidget === "powermenu") {
+                if (cmd === "close") {
+                    SessionController.hide();
+                } else if (cmd === "open") {
+                    SessionController.show();
+                } else {
+                    SessionController.toggle();
+                }
+                return;
+            }
+
             if (cmd === "airplane" || targetWidget === "airplane" || cmd === "flight" || targetWidget === "flight") {
                 let isAirplane = !Networking.wifiEnabled && !(Bluetooth.defaultAdapter && Bluetooth.defaultAdapter.enabled);
                 if (isAirplane) {

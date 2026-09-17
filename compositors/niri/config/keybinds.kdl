@@ -14,7 +14,7 @@ binds {
     Super+Print { spawn "serpantinum" "screenshot" "--full"; }
     Super+Shift+Print { spawn "serpantinum" "screenshot" "--full" "--edit"; }
 
-    XF86PowerOff { spawn "serpantinum" "lock"; }
+    XF86PowerOff { spawn "serpantinum" "msg" "toggle" "session"; }
     Mod+L { spawn "serpantinum" "lock"; }
 
     Mod+Space { spawn "playerctl" "play-pause"; }
@@ -37,6 +37,7 @@ binds {
     Mod+N { spawn "serpantinum" "msg" "toggle" "network"; }
     Mod+V { spawn "serpantinum" "msg" "toggle" "volume"; }
     Mod+H { spawn "serpantinum" "msg" "toggle" "guide"; }
+    Mod+X { spawn "serpantinum" "msg" "toggle" "session"; }
     Mod+A { spawn "serpantinum" "msg" "toggle" "autohide"; }
 
     Mod+Left { focus-column-left; }

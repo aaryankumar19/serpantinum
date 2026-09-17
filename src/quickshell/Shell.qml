@@ -19,6 +19,7 @@ ShellRoot {
 
     Launcher {}
     Clipboard {}    
+    SessionOverlay {}
 
     Polkit {}
     PopoutManager {}

@@ -172,6 +172,18 @@ Item {
         }
     }
 
+    function updateUptime() {
+        uptimeFile.reload();
+    }
+
+    Timer {
+        id: uptimeTimer
+        interval: 10000
+        repeat: true
+        running: true
+        onTriggered: root.updateUptime()
+    }
+
     FileView {
         id: uptimeFile
         path: "/proc/uptime"
@@ -188,7 +200,11 @@ Item {
                 let res = "";
                 if (d > 0) res += d + "d ";
                 if (h > 0 || d > 0) res += h + "h ";
-                res += m + "m";
+                if (m > 0 || (d === 0 && h === 0 && sec >= 60)) {
+                    res += m + "m";
+                } else if (d === 0 && h === 0 && sec < 60) {
+                    res += "< 1m";
+                }
                 root.uptime = res.trim();
             }
         }

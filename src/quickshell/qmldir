@@ -60,3 +60,5 @@ singleton OsdController 1.0 singletons/widgetcontrols/OsdController.qml
 singleton SideMusicController 1.0 singletons/widgetcontrols/SideMusicController.qml
 singleton TrayMenuController 1.0 singletons/widgetcontrols/TrayMenuController.qml
 singleton WidgetSync 1.0 singletons/widgetcontrols/WidgetSync.qml
+singleton SessionController 1.0 singletons/widgetcontrols/SessionController.qml
+SessionOverlay 1.0 session/SessionOverlay.qml
