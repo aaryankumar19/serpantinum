@@ -50,7 +50,20 @@ Item {
         return 1080;
     }
 
-    ListModel { id: widgetsModel }
+    function syncStretchFlags(index, x, y, w, h) {
+        let item = widgetsModel.get(index);
+        if (item.stretchWidth && (Math.abs(x) > 0.5 || Math.abs(w - getScreenWidth()) > 0.5)) {
+            widgetsModel.setProperty(index, "stretchWidth", false);
+        }
+        if (item.stretchHeight && (Math.abs(y) > 0.5 || Math.abs(h - getScreenHeight()) > 0.5)) {
+            widgetsModel.setProperty(index, "stretchHeight", false);
+        }
+    }
+
+    ListModel {
+        id: widgetsModel
+        dynamicRoles: true
+    }
 
     function isTargetMonitor(mon) {
         if (!mon) return false;
@@ -97,30 +110,53 @@ Item {
         return res;
     }
 
+    function toRecord(item) {
+        return {
+            wType: item.wType || "time",
+            wVariant: item.wVariant || WidgetRegistry.defaultVariant(item.wType || "time"),
+            wX: item.wX,
+            wY: item.wY,
+            wWidth: item.wWidth,
+            wHeight: item.wHeight,
+            wOpacity: item.wOpacity !== undefined ? item.wOpacity : 1.0,
+            wRotation: (item.wRotation !== undefined && !isNaN(item.wRotation)) ? item.wRotation : 0,
+            wImagePath: item.wImagePath || "",
+            imagePath: item.wImagePath || "",
+            wId: item.wId,
+            stretchWidth: !!item.stretchWidth,
+            stretchHeight: !!item.stretchHeight,
+            wProps: item.wProps || {},
+            isRemoving: false
+        };
+    }
+
+    function toJson(item) {
+        let o = Object.assign({}, item.wProps || {});
+        let normRot = ((Math.round(parseFloat(item.wRotation) || 0) % 360) + 360) % 360;
+        o.type = item.wType || "time";
+        o.wType = o.type;
+        o.wVariant = item.wVariant || WidgetRegistry.defaultVariant(o.type);
+        o.wX = item.wX;
+        o.wY = item.wY;
+        o.wWidth = item.wWidth;
+        o.wHeight = item.wHeight;
+        o.wOpacity = item.wOpacity !== undefined ? item.wOpacity : 1.0;
+        o.wRotation = normRot;
+        o.wImagePath = item.wImagePath || "";
+        o.imagePath = o.wImagePath;
+        o.wId = item.wId;
+        o.stretchWidth = !!item.stretchWidth;
+        o.stretchHeight = !!item.stretchHeight;
+        return o;
+    }
+
     function saveNow() {
         saveTimer.stop();
         let data = [];
         for (let i = 0; i < widgetsModel.count; i++) {
             let item = widgetsModel.get(i);
             if (item.isRemoving) continue;
-            let rawRot = (item.wRotation !== undefined && !isNaN(item.wRotation)) ? parseFloat(item.wRotation) : 0;
-            let normRot = ((Math.round(rawRot) % 360) + 360) % 360;
-            data.push({
-                type: item.wType || "time",
-                wType: item.wType || "time",
-                wVariant: item.wVariant || WidgetRegistry.defaultVariant(item.wType || "time"),
-                wX: item.wX,
-                wY: item.wY,
-                wWidth: item.wWidth,
-                wHeight: item.wHeight,
-                wOpacity: item.wOpacity !== undefined ? item.wOpacity : 1.0,
-                wRotation: normRot,
-                wImagePath: item.wImagePath || "",
-                imagePath: item.wImagePath || "",
-                wId: item.wId,
-                stretchWidth: !!item.stretchWidth,
-                stretchHeight: !!item.stretchHeight
-            });
+            data.push(toJson(item));
         }
         let jsonStr = JSON.stringify(data);
         let b64Data = toBase64(jsonStr);
@@ -208,6 +244,7 @@ Item {
                             wId: String(itemId),
                             stretchWidth: isStretchW,
                             stretchHeight: isStretchH,
+                            wProps: WidgetRegistry.extractProps(item),
                             isRemoving: false
                         });
                     }
@@ -288,6 +325,7 @@ Item {
                     wId: String(itemId),
                     stretchWidth: isStretchW,
                     stretchHeight: isStretchH,
+                    wProps: WidgetRegistry.extractProps(item),
                     isRemoving: false
                 });
             }
@@ -302,6 +340,7 @@ Item {
                 if (String(item.wId).trim() === target) {
                     widgetsModel.setProperty(i, "wX", x);
                     widgetsModel.setProperty(i, "wY", y);
+                    loaderRoot.syncStretchFlags(i, x, y, item.wWidth, item.wHeight);
                     saveTimer.restart();
                     break;
                 }
@@ -320,6 +359,7 @@ Item {
                     widgetsModel.setProperty(i, "wHeight", h);
                     if (opacity !== undefined) widgetsModel.setProperty(i, "wOpacity", opacity);
                     if (rotation !== undefined && !isNaN(rotation)) widgetsModel.setProperty(i, "wRotation", rotation);
+                    loaderRoot.syncStretchFlags(i, x, y, w, h);
                     saveTimer.restart();
                     break;
                 }
@@ -374,6 +414,22 @@ Item {
             }
         }
 
+        function onPropertyChanged(monitor, widgetId, propName, val) {
+            if (!loaderRoot.isTargetMonitor(monitor)) return;
+            if (WidgetRegistry.standardKeys.includes(propName)) return;
+            let target = String(widgetId).trim();
+            for (let i = 0; i < widgetsModel.count; i++) {
+                let item = widgetsModel.get(i);
+                if (String(item.wId).trim() === target) {
+                    let p = Object.assign({}, item.wProps || {});
+                    p[propName] = val;
+                    widgetsModel.setProperty(i, "wProps", p);
+                    saveTimer.restart();
+                    break;
+                }
+            }
+        }
+
         function onWidgetAdded(monitor, widgetId, type, x, y, w, h, opacity, imagePath, rotation, variant) {
             if (!loaderRoot.isTargetMonitor(monitor)) return;
             let target = String(widgetId).trim();
@@ -395,6 +451,7 @@ Item {
                 wId: target,
                 stretchWidth: false,
                 stretchHeight: false,
+                wProps: {},
                 isRemoving: false
             });
             loaderRoot.saveNow();
@@ -404,8 +461,9 @@ Item {
             if (!loaderRoot.isTargetMonitor(monitor)) return;
             let target = String(widgetId).trim();
             for (let i = 0; i < widgetsModel.count; i++) {
-                if (String(widgetsModel.get(i).wId).trim() === target) {
-                    widgetsModel.setProperty(i, "isRemoving", true);
+                let item = widgetsModel.get(i);
+                if (item && String(item.wId).trim() === target) {
+                    widgetsModel.remove(i, 1);
                     loaderRoot.saveNow();
                     break;
                 }
@@ -415,10 +473,10 @@ Item {
         function onWidgetsByTypeRemoved(monitor, type) {
             if (!loaderRoot.isTargetMonitor(monitor)) return;
             let matched = false;
-            for (let i = 0; i < widgetsModel.count; i++) {
+            for (let i = widgetsModel.count - 1; i >= 0; i--) {
                 let item = widgetsModel.get(i);
-                if (item && item.wType === type && !item.isRemoving) {
-                    widgetsModel.setProperty(i, "isRemoving", true);
+                if (item && item.wType === type) {
+                    widgetsModel.remove(i, 1);
                     matched = true;
                 }
             }
@@ -429,9 +487,7 @@ Item {
 
         function onWidgetsCleared(monitor) {
             if (!loaderRoot.isTargetMonitor(monitor)) return;
-            for (let i = 0; i < widgetsModel.count; i++) {
-                widgetsModel.setProperty(i, "isRemoving", true);
-            }
+            widgetsModel.clear();
             loaderRoot.saveNow();
         }
 
@@ -442,23 +498,7 @@ Item {
                 let item = widgetsModel.get(i);
                 if (String(item.wId).trim() === target) {
                     if (i < widgetsModel.count - 1) {
-                        let rotVal = (item.wRotation !== undefined && !isNaN(item.wRotation)) ? item.wRotation : 0;
-                        let obj = {
-                            wType: item.wType || "time",
-                            wVariant: item.wVariant || WidgetRegistry.defaultVariant(item.wType || "time"),
-                            wX: item.wX,
-                            wY: item.wY,
-                            wWidth: item.wWidth,
-                            wHeight: item.wHeight,
-                            wOpacity: item.wOpacity !== undefined ? item.wOpacity : 1.0,
-                            wRotation: rotVal,
-                            wImagePath: item.wImagePath || "",
-                            imagePath: item.wImagePath || "",
-                            wId: item.wId,
-                            stretchWidth: !!item.stretchWidth,
-                            stretchHeight: !!item.stretchHeight,
-                            isRemoving: false
-                        };
+                        let obj = toRecord(item);
                         widgetsModel.remove(i, 1);
                         widgetsModel.append(obj);
                         loaderRoot.saveNow();
@@ -494,6 +534,15 @@ Item {
             return "ok";
         }
 
+        function applyPreset(widgetsJson: string): string {
+            try {
+                WidgetSync.applyPreset(loaderRoot.safeMonitorName, JSON.parse(widgetsJson), true);
+            } catch (e) {
+                return "invalid";
+            }
+            return "ok";
+        }
+
         function reload(): string {
             saveTimer.stop();
             loadProcess.output = "";
@@ -521,6 +570,7 @@ Item {
                 wId: String(id).trim(),
                 stretchWidth: false,
                 stretchHeight: false,
+                wProps: {},
                 isRemoving: false
             });
             loaderRoot.saveNow();
@@ -636,7 +686,7 @@ Item {
             for (let i = 0; i < widgetsModel.count; i++) {
                 let item = widgetsModel.get(i);
                 if (item && String(item.wId).trim() === target) {
-                    widgetsModel.setProperty(i, "isRemoving", true);
+                    widgetsModel.remove(i, 1);
                     loaderRoot.saveNow();
                     return "ok";
                 }
@@ -650,23 +700,7 @@ Item {
                 let item = widgetsModel.get(i);
                 if (String(item.wId).trim() === target) {
                     if (i < widgetsModel.count - 1) {
-                        let rotVal = (item.wRotation !== undefined && !isNaN(item.wRotation)) ? item.wRotation : 0;
-                        let obj = {
-                            wType: item.wType || "time",
-                            wVariant: item.wVariant || WidgetRegistry.defaultVariant(item.wType || "time"),
-                            wX: item.wX,
-                            wY: item.wY,
-                            wWidth: item.wWidth,
-                            wHeight: item.wHeight,
-                            wOpacity: item.wOpacity !== undefined ? item.wOpacity : 1.0,
-                            wRotation: rotVal,
-                            wImagePath: item.wImagePath || "",
-                            imagePath: item.wImagePath || "",
-                            wId: item.wId,
-                            stretchWidth: !!item.stretchWidth,
-                            stretchHeight: !!item.stretchHeight,
-                            isRemoving: false
-                        };
+                        let obj = toRecord(item);
                         widgetsModel.remove(i, 1);
                         widgetsModel.append(obj);
                         loaderRoot.saveNow();
@@ -678,9 +712,7 @@ Item {
         }
 
         function clear(): string {
-            for (let i = 0; i < widgetsModel.count; i++) {
-                widgetsModel.setProperty(i, "isRemoving", true);
-            }
+            widgetsModel.clear();
             loaderRoot.saveNow();
             return "ok";
         }
@@ -690,23 +722,7 @@ Item {
             for (let i = 0; i < widgetsModel.count; i++) {
                 let item = widgetsModel.get(i);
                 if (item.isRemoving) continue;
-                let rotVal = (item.wRotation !== undefined && !isNaN(item.wRotation)) ? item.wRotation : 0;
-                data.push({
-                    type: item.wType || "time",
-                    wType: item.wType || "time",
-                    wVariant: item.wVariant || WidgetRegistry.defaultVariant(item.wType || "time"),
-                    wX: item.wX,
-                    wY: item.wY,
-                    wWidth: item.wWidth,
-                    wHeight: item.wHeight,
-                    wOpacity: item.wOpacity !== undefined ? item.wOpacity : 1.0,
-                    wRotation: rotVal,
-                    wImagePath: item.wImagePath || "",
-                    imagePath: item.wImagePath || "",
-                    wId: item.wId,
-                    stretchWidth: !!item.stretchWidth,
-                    stretchHeight: !!item.stretchHeight
-                });
+                data.push(toJson(item));
             }
             return JSON.stringify(data);
         }
@@ -729,6 +745,7 @@ Item {
             wOpacity: model.wOpacity !== undefined ? model.wOpacity : 1.0
             wRotation: (model.wRotation !== undefined && !isNaN(model.wRotation)) ? model.wRotation : 0
             wImagePath: model.wImagePath || ""
+            customProps: model.wProps || ({})
         }
     }
 }

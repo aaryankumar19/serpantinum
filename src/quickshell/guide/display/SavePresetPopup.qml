@@ -91,7 +91,7 @@ Popup {
         let cacheDir = (typeof Caching !== "undefined" && typeof Caching.getCacheDir === "function")
             ? Caching.getCacheDir("wallpaper") : "";
         if (isVid || !p) {
-            let monSnap = cacheDir ? (cacheDir + "/current_wallpaper_" + monName + ".png") : "";
+            let monSnap = (cacheDir && monName) ? (cacheDir + "/current_wallpaper_" + monName + ".png") : "";
             if (monSnap) return "file://" + monSnap;
             let genSnap = cacheDir ? (cacheDir + "/current_wallpaper.png") : "";
             if (genSnap) return "file://" + genSnap;
@@ -178,7 +178,15 @@ Popup {
 
     background: Rectangle {
         radius: ThemeBackend.clampedBorderRadius
-        color: ThemeBackend.base
+        color: gf1.active ? "transparent" : ThemeBackend.base
+
+        GlassFill {
+            id: gf1
+            anchors.fill: parent
+            radius: parent.radius
+            tintColor: ThemeBackend.base
+            tintAmount: 0.25
+        }
         border.color: ThemeBackend.surface0
         border.width: 1
     }
@@ -198,13 +206,10 @@ Popup {
                 Layout.fillWidth: true
             }
 
-            IconButton {
+            CloseButton {
                 size: rootObj ? rootObj.s(30) : 30
                 cornerRadius: rootObj ? rootObj.s(8) : 8
-                buttonIcon: "󰅖"
                 iconFontSize: rootObj ? rootObj.s(14) : 14
-                accentColor: ThemeBackend.surface0
-                textColor: ThemeBackend.text
                 onClicked: savePresetPopup.close()
             }
         }
@@ -238,7 +243,7 @@ Popup {
 
                     Image {
                         anchors.fill: parent
-                        source: savePresetPopup.getWallpaperSource(savePresetPopup.targetMonitor)
+                        source: (savePresetPopup.visible && savePresetPopup.targetMonitor) ? savePresetPopup.getWallpaperSource(savePresetPopup.targetMonitor) : ""
                         fillMode: Image.PreserveAspectCrop
                         smooth: true
                         cache: true

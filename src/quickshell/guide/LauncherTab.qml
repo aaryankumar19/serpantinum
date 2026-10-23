@@ -4,27 +4,18 @@ import QtQuick.Controls
 import Quickshell
 import "../"
 import "../reusables"
+import "../launcher/SearchProviders.js" as SearchProviders
 
-Item {
+GuideTab {
     id: launcherTabRoot
-    required property var rootObj
-    required property int tabIndex
-
-    anchors.fill: parent
-    visible: rootObj.currentTab === tabIndex
-    opacity: visible ? 1.0 : 0.0
-    property real slideY: visible ? 0 : rootObj.s(10)
-
-    Behavior on slideY { NumberAnimation { duration: 250; easing.type: Easing.OutQuart } }
-    transform: Translate { y: slideY }
-    Behavior on opacity { NumberAnimation { duration: 250 } }
 
     property var defaultLauncherSettings: ({
         "position": "top",
         "width": 600,
         "itemCount": 6,
         "terminalCommand": "kitty -e",
-        "smartRanking": true
+        "smartRanking": true,
+        "searchProvider": "google"
     })
 
     property var launcherSettings: {
@@ -42,6 +33,8 @@ Item {
     property string currentTerminalCommand: launcherSettings && launcherSettings.terminalCommand !== undefined ? launcherSettings.terminalCommand : "kitty -e"
     property bool currentSmartRanking: launcherSettings && launcherSettings.smartRanking !== undefined ? launcherSettings.smartRanking : true
 
+    property string currentSearchProvider: launcherSettings && launcherSettings.searchProvider !== undefined ? launcherSettings.searchProvider : SearchProviders.DEFAULT_ID
+
     function syncSettings() {
         let s = (typeof Config !== "undefined" && typeof Config.getSetting === "function")
             ? Config.getSetting("launcher", launcherTabRoot.defaultLauncherSettings)
@@ -52,6 +45,7 @@ Item {
         launcherTabRoot.currentItemCount = s.itemCount !== undefined ? s.itemCount : 6;
         launcherTabRoot.currentTerminalCommand = s.terminalCommand !== undefined ? s.terminalCommand : "kitty -e";
         launcherTabRoot.currentSmartRanking = s.smartRanking !== undefined ? s.smartRanking : true;
+        launcherTabRoot.currentSearchProvider = s.searchProvider !== undefined ? s.searchProvider : SearchProviders.DEFAULT_ID;
     }
 
     function updateLauncherSetting(key, value) {
@@ -84,6 +78,7 @@ Item {
             syncSettings();
         } else {
             if (posDropdown.isOpen) posDropdown.closePopup();
+            if (searchDropdown.isOpen) searchDropdown.closePopup();
         }
     }
 
@@ -113,57 +108,12 @@ Item {
             width: parent.width
             spacing: rootObj.s(6)
 
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: rowPosLayout.implicitHeight + rootObj.s(24)
-                radius: ThemeBackend.borderRadius
-                color: Qt.alpha(ThemeBackend.surface0, 0.4)
-                border.width: 0
-
-                RowLayout {
-                    id: rowPosLayout
-                    anchors.left: parent.left
-                    anchors.leftMargin: rootObj.s(14)
-                    anchors.right: parent.right
-                    anchors.rightMargin: rootObj.s(14)
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(12)
-
-                    IconButton {
-                        enabled: false
-                        size: rootObj.s(32)
-                        Layout.preferredWidth: rootObj.s(32)
-                        Layout.preferredHeight: rootObj.s(32)
-                        Layout.alignment: Qt.AlignVCenter
-                        cornerRadius: ThemeBackend.borderRadius
-                        buttonIcon: "󰍹"
-                        iconOffsetX: -2
-                        iconFontSize: rootObj.s(16)
-                        accentColor: ThemeBackend.surface0
-                        textColor: "#ffffff"
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignVCenter
-                        spacing: rootObj.s(2)
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: I18n.t("guide.launcher.position.title", "Screen Position")
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(13)
-                            color: ThemeBackend.text
-                        }
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: I18n.t("guide.launcher.position.desc", "Select which screen edge the launcher attaches to")
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(11)
-                            color: ThemeBackend.subtext0
-                        }
-                    }
+            SettingsBlob {
+                SettingsRow {
+                    rootObj: launcherTabRoot.rootObj
+                    icon: "󰍹"
+                    title: I18n.t("guide.launcher.position.title", "Screen Position")
+                    description: I18n.t("guide.launcher.position.desc", "Select which screen edge the launcher attaches to")
 
                     Dropdown {
                         id: posDropdown
@@ -203,58 +153,12 @@ Item {
                         }
                     }
                 }
-            }
 
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: rowWidthLayout.implicitHeight + rootObj.s(24)
-                radius: ThemeBackend.borderRadius
-                color: Qt.alpha(ThemeBackend.surface0, 0.4)
-                border.width: 0
-
-                RowLayout {
-                    id: rowWidthLayout
-                    anchors.left: parent.left
-                    anchors.leftMargin: rootObj.s(14)
-                    anchors.right: parent.right
-                    anchors.rightMargin: rootObj.s(14)
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(12)
-
-                    IconButton {
-                        enabled: false
-                        size: rootObj.s(32)
-                        Layout.preferredWidth: rootObj.s(32)
-                        Layout.preferredHeight: rootObj.s(32)
-                        Layout.alignment: Qt.AlignVCenter
-                        cornerRadius: ThemeBackend.borderRadius
-                        buttonIcon: "󰘖"
-                        iconFontSize: rootObj.s(16)
-                        accentColor: ThemeBackend.surface0
-                        textColor: "#ffffff"
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignVCenter
-                        spacing: rootObj.s(2)
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: I18n.t("guide.launcher.width.title", "Launcher Width")
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(13)
-                            color: ThemeBackend.text
-                        }
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: I18n.t("guide.launcher.width.desc", "Total width of the launcher window in pixels")
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(11)
-                            color: ThemeBackend.subtext0
-                        }
-                    }
+                SettingsRow {
+                    rootObj: launcherTabRoot.rootObj
+                    icon: "󰘖"
+                    title: I18n.t("guide.launcher.width.title", "Launcher Width")
+                    description: I18n.t("guide.launcher.width.desc", "Total width of the launcher window in pixels")
 
                     NumberSelector {
                         id: widthSelector
@@ -294,58 +198,12 @@ Item {
                         }
                     }
                 }
-            }
 
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: rowItemsLayout.implicitHeight + rootObj.s(24)
-                radius: ThemeBackend.borderRadius
-                color: Qt.alpha(ThemeBackend.surface0, 0.4)
-                border.width: 0
-
-                RowLayout {
-                    id: rowItemsLayout
-                    anchors.left: parent.left
-                    anchors.leftMargin: rootObj.s(14)
-                    anchors.right: parent.right
-                    anchors.rightMargin: rootObj.s(14)
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(12)
-
-                    IconButton {
-                        enabled: false
-                        size: rootObj.s(32)
-                        Layout.preferredWidth: rootObj.s(32)
-                        Layout.preferredHeight: rootObj.s(32)
-                        Layout.alignment: Qt.AlignVCenter
-                        cornerRadius: ThemeBackend.borderRadius
-                        buttonIcon: "󰅫"
-                        iconFontSize: rootObj.s(16)
-                        accentColor: ThemeBackend.surface0
-                        textColor: "#ffffff"
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignVCenter
-                        spacing: rootObj.s(2)
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: I18n.t("guide.launcher.items.title", "Visible Items")
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(13)
-                            color: ThemeBackend.text
-                        }
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: I18n.t("guide.launcher.items.desc", "Number of search results displayed simultaneously")
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(11)
-                            color: ThemeBackend.subtext0
-                        }
-                    }
+                SettingsRow {
+                    rootObj: launcherTabRoot.rootObj
+                    icon: "󰅫"
+                    title: I18n.t("guide.launcher.items.title", "Visible Items")
+                    description: I18n.t("guide.launcher.items.desc", "Number of search results displayed simultaneously")
 
                     NumberSelector {
                         id: itemsSelector
@@ -386,56 +244,12 @@ Item {
                 }
             }
 
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: rowSmartRankLayout.implicitHeight + rootObj.s(24)
-                radius: ThemeBackend.borderRadius
-                color: Qt.alpha(ThemeBackend.surface0, 0.4)
-                border.width: 0
-
-                RowLayout {
-                    id: rowSmartRankLayout
-                    anchors.left: parent.left
-                    anchors.leftMargin: rootObj.s(14)
-                    anchors.right: parent.right
-                    anchors.rightMargin: rootObj.s(14)
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(12)
-
-                    IconButton {
-                        enabled: false
-                        size: rootObj.s(32)
-                        Layout.preferredWidth: rootObj.s(32)
-                        Layout.preferredHeight: rootObj.s(32)
-                        Layout.alignment: Qt.AlignVCenter
-                        cornerRadius: ThemeBackend.borderRadius
-                        buttonIcon: "󰓥"
-                        iconFontSize: rootObj.s(16)
-                        accentColor: ThemeBackend.surface0
-                        textColor: "#ffffff"
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignVCenter
-                        spacing: rootObj.s(2)
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: I18n.t("guide.launcher.smart_ranking.title", "Smart Rank by Usage")
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(13)
-                            color: ThemeBackend.text
-                        }
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: I18n.t("guide.launcher.smart_ranking.desc", "Rank apps and widgets based on usage frequency and recency")
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(11)
-                            color: ThemeBackend.subtext0
-                        }
-                    }
+            SettingsBlob {
+                SettingsRow {
+                    rootObj: launcherTabRoot.rootObj
+                    icon: "󰓥"
+                    title: I18n.t("guide.launcher.smart_ranking.title", "Smart Rank by Usage")
+                    description: I18n.t("guide.launcher.smart_ranking.desc", "Rank apps and widgets based on usage frequency and recency")
 
                     Toggle {
                         id: smartRankToggle
@@ -451,58 +265,12 @@ Item {
                         }
                     }
                 }
-            }
 
-            Rectangle {
-                Layout.fillWidth: true
-                implicitHeight: rowTerminalLayout.implicitHeight + rootObj.s(24)
-                radius: ThemeBackend.borderRadius
-                color: Qt.alpha(ThemeBackend.surface0, 0.4)
-                border.width: 0
-
-                RowLayout {
-                    id: rowTerminalLayout
-                    anchors.left: parent.left
-                    anchors.leftMargin: rootObj.s(14)
-                    anchors.right: parent.right
-                    anchors.rightMargin: rootObj.s(14)
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: rootObj.s(12)
-
-                    IconButton {
-                        enabled: false
-                        size: rootObj.s(32)
-                        Layout.preferredWidth: rootObj.s(32)
-                        Layout.preferredHeight: rootObj.s(32)
-                        Layout.alignment: Qt.AlignVCenter
-                        cornerRadius: ThemeBackend.borderRadius
-                        buttonIcon: "󰆍"
-                        iconFontSize: rootObj.s(16)
-                        accentColor: ThemeBackend.surface0
-                        textColor: "#ffffff"
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        Layout.alignment: Qt.AlignVCenter
-                        spacing: rootObj.s(2)
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: I18n.t("guide.launcher.terminal.title", "Terminal Command")
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(13)
-                            color: ThemeBackend.text
-                        }
-
-                        Text {
-                            Layout.fillWidth: true
-                            text: I18n.t("guide.launcher.terminal.desc", "Command prefix used for > executions (e.g. kitty -e, alacritty -e, foot -e)")
-                            font.family: ThemeBackend.fontFamily
-                            font.pixelSize: rootObj.s(11)
-                            color: ThemeBackend.subtext0
-                        }
-                    }
+                SettingsRow {
+                    rootObj: launcherTabRoot.rootObj
+                    icon: "󰆍"
+                    title: I18n.t("guide.launcher.terminal.title", "Terminal Command")
+                    description: I18n.t("guide.launcher.terminal.desc", "Command prefix used for > executions (e.g. kitty -e, alacritty -e, foot -e)")
 
                     Input {
                         id: terminalInput
@@ -530,6 +298,35 @@ Item {
                         }
                     }
                 }
+
+                SettingsRow {
+                    rootObj: launcherTabRoot.rootObj
+                    icon: "󰖟"
+                    title: I18n.t("guide.launcher.search.title", "Web search provider")
+                    description: I18n.t("guide.launcher.search.desc", "Search engine used when a query starts with ?")
+
+                    Dropdown {
+                        id: searchDropdown
+                        Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
+                        implicitWidth: rootObj.s(180)
+                        implicitHeight: rootObj.s(32)
+                        options: SearchProviders.names()
+                        currentIndex: SearchProviders.indexOf(launcherTabRoot.currentSearchProvider)
+                        accentColor: ThemeBackend.mauve
+                        baseColor: ThemeBackend.surface0
+                        hoverColor: ThemeBackend.surface1
+                        dropdownColor: ThemeBackend.surface0
+                        borderColor: Qt.alpha(ThemeBackend.surface2, 0.6)
+                        textColor: ThemeBackend.text
+                        activeTextColor: ThemeBackend.crust
+                        fontPixelSize: rootObj.s(11)
+                        onValueChanged: function(index, value) {
+                            let id = SearchProviders.PROVIDERS[index].id;
+                            launcherTabRoot.currentSearchProvider = id;
+                            launcherTabRoot.updateLauncherSetting("searchProvider", id);
+                        }
+                    }
+                }
             }
 
             RowLayout {
@@ -553,9 +350,7 @@ Item {
                     textColor: ThemeBackend.crust
                     cornerRadius: ThemeBackend.borderRadius
                     onClicked: {
-                        if (typeof LauncherController !== "undefined") {
-                            LauncherController.toggle();
-                        }
+                        Quickshell.execDetached(["bash", Caching.serpantinumDir + "/scripts/qs_manager.sh", "toggle", "launcher"]);
                     }
                 }
             }

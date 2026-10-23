@@ -1,5 +1,13 @@
+.codebase-memory
 src/assets/languages/add.py
 changelog.py
+.agents/
+AGENTS.md
+.claude/
+
+__pycache__/
+
+.omc/
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
