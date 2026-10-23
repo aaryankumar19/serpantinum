@@ -18,7 +18,7 @@ binds {
     XF86PowerOff { spawn "serpantinum" "msg" "toggle" "session"; }
     Mod+L { spawn "serpantinum" "lock"; }
 
-    Mod+Space { spawn "playerctl" "play-pause"; }
+    Mod+Space { spawn "alacritty"; }
     XF86AudioPause { spawn "playerctl" "play-pause"; }
     XF86AudioPlay { spawn "playerctl" "play-pause"; }
     XF86AudioPrev { spawn "playerctl" "previous"; }
