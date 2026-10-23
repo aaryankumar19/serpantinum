@@ -720,16 +720,11 @@ PanelWindow {
             return a.name.localeCompare(b.name);
         });
 
-        let unique = {};
-        let finalArr = [];
-        for (let i = 0; i < arr.length; i++) {
-            if (!unique[arr[i].name]) {
-                unique[arr[i].name] = true;
-                finalArr.push(arr[i]);
-            }
-        }
-
-        launcherWindow.allApps = finalArr;
+        // Display names are not identifiers: multiple desktop entries (or a
+        // desktop entry and a shell widget) may legitimately share one.
+        // Filtering and ListModel reconciliation use getItemKey(), which is
+        // stable and unique for these entries.
+        launcherWindow.allApps = arr;
     }
 
     ListModel {
