@@ -128,13 +128,13 @@
       {
         "name": "Kitty",
         "comment": "Fast, feature-rich, GPU based terminal",
-        "desktop_id": "kitty.desktop",
+        "desktop_id": "kitty",
         "icon": "kitty"
       },
       {
         "name": "Files",
         "comment": "Access and organize files",
-        "desktop_id": "org.gnome.Nautilus.desktop",
+        "desktop_id": "org.gnome.Nautilus",
         "icon": "org.gnome.Nautilus"
       }
     ],
@@ -150,5 +150,11 @@
     "showRunningIndicators": true,
     "showRunningApps": false,
     "runningScope": "auto"
+  },
+  "touchpad": {
+    "sensitivity": 0.5,
+    "naturalScroll": true,
+    "disableWhileTyping": false,
+    "accelProfile": "flat"
   }
 }
