@@ -281,7 +281,7 @@ QtObject {
         }
     }
 
-    property Component showNoLyricsComponent: Component {
+    property Component hideTextComponent: Component {
         Item {
             id: settingRoot
             property var typeData: null
@@ -293,14 +293,14 @@ QtObject {
 
             readonly property var targetWidget: settingRoot.widget || settingRoot.widgetData || settingRoot.item || null
 
-            implicitWidth: noLyricsRow.implicitWidth + Scaler.s(20)
+            implicitWidth: hideTextRow.implicitWidth + Scaler.s(20)
             implicitHeight: Scaler.s(34)
 
             function syncValue() {
                 let w = settingRoot.targetWidget;
                 if (!w) return;
-                let cur = w.showNoLyrics !== false;
-                if (noLyricsToggle.checked !== cur) noLyricsToggle.checked = cur;
+                let cur = w.hideText === true;
+                if (hideTextToggle.checked !== cur) hideTextToggle.checked = cur;
             }
 
             Component.onCompleted: syncValue()
@@ -309,7 +309,7 @@ QtObject {
             Connections {
                 target: settingRoot.targetWidget
                 ignoreUnknownSignals: true
-                function onShowNoLyricsChanged() {
+                function onHideTextChanged() {
                     settingRoot.syncValue();
                 }
             }
@@ -317,10 +317,10 @@ QtObject {
             Rectangle {
                 anchors.fill: parent
                 radius: ThemeBackend.borderRadius
-                color: noLyricsGlass.active ? "transparent" : ThemeBackend.surface0
+                color: hideTextGlass.active ? "transparent" : ThemeBackend.surface0
 
                 GlassFill {
-                    id: noLyricsGlass
+                    id: hideTextGlass
                     anchors.fill: parent
                     radius: parent.radius
                     tintColor: ThemeBackend.surface0
@@ -329,13 +329,13 @@ QtObject {
             }
 
             Row {
-                id: noLyricsRow
+                id: hideTextRow
                 anchors.centerIn: parent
                 spacing: Scaler.s(8)
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: I18n.t("widgets.settings.showNoLyrics", "Show \"no lyrics\" text")
+                    text: I18n.t("widgets.settings.hideText", "Hide text")
                     font.family: ThemeBackend.fontFamily
                     font.pixelSize: Scaler.s(11)
                     font.bold: true
@@ -343,19 +343,19 @@ QtObject {
                 }
 
                 Toggle {
-                    id: noLyricsToggle
+                    id: hideTextToggle
                     anchors.verticalCenter: parent.verticalCenter
                     horizontalPadding: 0
                     cornerRadius: ThemeBackend.borderRadius
-                    checked: settingRoot.targetWidget ? settingRoot.targetWidget.showNoLyrics !== false : true
+                    checked: settingRoot.targetWidget ? settingRoot.targetWidget.hideText === true : false
                     accentColor: ThemeBackend.mauve
                     baseColor: ThemeBackend.surface1
                     handleColor: ThemeBackend.crust
                     handleOffColor: ThemeBackend.text
                     onToggled: function(c) {
                         let w = settingRoot.targetWidget;
-                        if (w && w.showNoLyrics !== undefined) w.showNoLyrics = c;
-                        if (settingRoot.redactor) settingRoot.redactor.setWidgetProperty("showNoLyrics", c);
+                        if (w && w.hideText !== undefined) w.hideText = c;
+                        if (settingRoot.redactor) settingRoot.redactor.setWidgetProperty("hideText", c);
                     }
                 }
             }
@@ -550,6 +550,154 @@ QtObject {
         }
     }
 
+    property Component textContentInputComponent: Component {
+        Item {
+            id: settingRoot
+            property var typeData: null
+            property var settingData: null
+            property var redactor: null
+            property var widget: null
+            property var widgetData: null
+            property var item: null
+
+            readonly property var targetWidget: settingRoot.widget || settingRoot.widgetData || settingRoot.item || null
+
+            implicitWidth: Scaler.s(240)
+            implicitHeight: Scaler.s(34)
+
+            function syncValue() {
+                let w = settingRoot.targetWidget;
+                if (!w || textInput.hasFocus) return;
+                let cur = w.textContent !== undefined ? String(w.textContent) : "";
+                if (textInput.text !== cur) textInput.text = cur;
+            }
+
+            Component.onCompleted: syncValue()
+            onTargetWidgetChanged: syncValue()
+
+            Connections {
+                target: settingRoot.targetWidget
+                ignoreUnknownSignals: true
+                function onTextContentChanged() {
+                    settingRoot.syncValue();
+                }
+            }
+
+            Input {
+                id: textInput
+                anchors.fill: parent
+                placeholderText: I18n.t("widgets.text.placeholder", "Enter text")
+                fontPixelSize: Scaler.s(12)
+                baseColor: ThemeBackend.surface0
+                accentColor: ThemeBackend.mauve
+                textColor: ThemeBackend.text
+                subTextColor: ThemeBackend.subtext0
+                borderColor: Qt.alpha(ThemeBackend.surface2, 0.6)
+                cornerRadius: ThemeBackend.borderRadius
+                horizontalPadding: Scaler.s(10)
+
+                onTextEdited: function(newText) {
+                    let w = settingRoot.targetWidget;
+                    if (w && w.textContent !== undefined) w.textContent = newText;
+                    if (settingRoot.redactor) settingRoot.redactor.setWidgetProperty("textContent", newText);
+                }
+            }
+        }
+    }
+
+    property Component textFontComponent: Component {
+        Item {
+            id: settingRoot
+            property var typeData: null
+            property var settingData: null
+            property var redactor: null
+            property var widget: null
+            property var widgetData: null
+            property var item: null
+
+            readonly property var targetWidget: settingRoot.widget || settingRoot.widgetData || settingRoot.item || null
+            readonly property string defaultLabel: I18n.t("widgets.variants.default", "Default")
+            readonly property var blockedPatterns: [".notdef", "cursor", "emoji", "symbol", "pcf"]
+            property var fontNames: []
+
+            implicitWidth: Scaler.s(200)
+            implicitHeight: Scaler.s(34)
+
+            function loadFonts() {
+                let seen = new Set();
+                let names = [];
+                let add = function(name) {
+                    let key = name.toLowerCase().trim();
+                    if (key === "" || seen.has(key)) return;
+                    for (let i = 0; i < settingRoot.blockedPatterns.length; i++) {
+                        if (key.indexOf(settingRoot.blockedPatterns[i]) !== -1) return;
+                    }
+                    seen.add(key);
+                    names.push(name);
+                };
+                let bundled = ThemeBackend.bundledNames;
+                for (let i = 0; i < bundled.length; i++) add(bundled[i]);
+                let rest = [];
+                let raw = Qt.fontFamilies();
+                for (let i = 0; i < raw.length; i++) {
+                    if (!seen.has(raw[i].toLowerCase().trim())) rest.push(raw[i]);
+                }
+                rest.sort(function(a, b) { return a.localeCompare(b); });
+                for (let i = 0; i < rest.length; i++) add(rest[i]);
+                let w = settingRoot.targetWidget;
+                if (w && w.fontFamily) add(String(w.fontFamily));
+                settingRoot.fontNames = names;
+            }
+
+            function syncValue() {
+                let w = settingRoot.targetWidget;
+                if (!w) return;
+                let cur = w.fontFamily !== undefined ? String(w.fontFamily) : "";
+                if (cur !== "" && settingRoot.fontNames.indexOf(cur) === -1) settingRoot.loadFonts();
+                let idx = cur === "" ? 0 : settingRoot.fontNames.indexOf(cur) + 1;
+                if (fontDropdown.currentIndex !== idx) fontDropdown.currentIndex = idx;
+            }
+
+            Component.onCompleted: {
+                loadFonts();
+                syncValue();
+            }
+            onTargetWidgetChanged: syncValue()
+
+            Connections {
+                target: settingRoot.targetWidget
+                ignoreUnknownSignals: true
+                function onFontFamilyChanged() {
+                    settingRoot.syncValue();
+                }
+            }
+
+            Dropdown {
+                id: fontDropdown
+                anchors.fill: parent
+                options: [settingRoot.defaultLabel].concat(settingRoot.fontNames)
+                placeholderText: I18n.t("guide.theme.font.select")
+                useOptionAsFontFamily: true
+                accentColor: ThemeBackend.mauve
+                baseColor: ThemeBackend.surface0
+                dropdownColor: ThemeBackend.base
+                borderColor: Qt.alpha(ThemeBackend.surface2, 0.6)
+                textColor: ThemeBackend.text
+                activeTextColor: ThemeBackend.crust
+                cornerRadius: ThemeBackend.borderRadius
+                fontPixelSize: Scaler.s(11)
+
+                onValueChanged: function(index, value) {
+                    let val = index <= 0 ? "" : value;
+                    let w = settingRoot.targetWidget;
+                    if (w && w.fontFamily !== undefined && w.fontFamily === val) return;
+                    if (w && w.fontFamily !== undefined) w.fontFamily = val;
+                    if (settingRoot.redactor) settingRoot.redactor.setWidgetProperty("fontFamily", val);
+                }
+            }
+        }
+    }
+
     readonly property var usageCircleSettings: [
         {
             id: "sineWave",
@@ -584,10 +732,18 @@ QtObject {
         }
     ]
 
+    readonly property var categories: [
+        { id: "time", icon: String.fromCodePoint(0xF0150), name: I18n.t("widgets.redactor.category.time", "Time and text") },
+        { id: "media", icon: String.fromCodePoint(0xF075A), name: I18n.t("widgets.redactor.category.media", "Media") },
+        { id: "system", icon: String.fromCodePoint(0xF061A), name: I18n.t("widgets.redactor.category.system", "System") },
+        { id: "info", icon: String.fromCodePoint(0xF02FD), name: I18n.t("widgets.redactor.category.info", "Info") }
+    ]
+
     property var types: ({
         "visualizer": {
             name: I18n.t("widgets.types.visualizer"),
             icon: String.fromCodePoint(0xF147D),
+            category: "media",
             defaultWidth: Math.round((Quickshell.screens && Quickshell.screens.length > 0 ? Quickshell.screens[0].width : 1920) / 2),
             defaultHeight: 180,
             defaultVariant: "bars",
@@ -610,6 +766,7 @@ QtObject {
         "time": {
             name: I18n.t("widgets.types.clock"),
             icon: String.fromCodePoint(0xF0954),
+            category: "time",
             defaultWidth: 250,
             defaultHeight: 120,
             defaultVariant: "digital",
@@ -627,6 +784,7 @@ QtObject {
         "music": {
             name: I18n.t("widgets.types.music"),
             icon: String.fromCodePoint(0xF0388),
+            category: "media",
             defaultWidth: 340,
             defaultHeight: 120,
             defaultVariant: "full",
@@ -670,18 +828,18 @@ QtObject {
                     component: registry.lyricsAlignmentSelectorComponent
                 },
                 {
-                    id: "showNoLyrics",
-                    name: typeof I18n !== "undefined" ? I18n.t("widgets.settings.showNoLyrics", "Show \"no lyrics\" text") : "Show \"no lyrics\" text",
+                    id: "hideText",
+                    name: typeof I18n !== "undefined" ? I18n.t("widgets.settings.hideText", "Hide text") : "Hide text",
                     icon: String.fromCodePoint(0xF0388),
                     iconFontSize: 16,
-                    action: "showNoLyrics",
+                    action: "hideText",
                     type: "custom",
                     row: "bottom",
                     variants: ["simpleLyrics"],
-                    property: "showNoLyrics",
+                    property: "hideText",
                     accentColor: "surface0",
                     textColor: "mauve",
-                    component: registry.showNoLyricsComponent
+                    component: registry.hideTextComponent
                 },
                 {
                     id: "continuous",
@@ -702,6 +860,7 @@ QtObject {
         "weather": {
             name: I18n.t("widgets.types.weather"),
             icon: String.fromCodePoint(0xF0590),
+            category: "info",
             defaultWidth: 250,
             defaultHeight: 120,
             defaultVariant: "compact",
@@ -714,6 +873,7 @@ QtObject {
         "image": {
             name: I18n.t("widgets.types.image"),
             icon: String.fromCodePoint(0xF02E9),
+            category: "media",
             defaultWidth: 300,
             defaultHeight: 200,
             defaultVariant: "rect",
@@ -738,6 +898,7 @@ QtObject {
         "user": {
             name: I18n.t("widgets.types.user"),
             icon: String.fromCodePoint(0xF0004),
+            category: "system",
             defaultWidth: 260,
             defaultHeight: 140,
             defaultVariant: "default",
@@ -748,6 +909,7 @@ QtObject {
         "cpu": {
             name: I18n.t("quickactions.systemusage.cpu"),
             icon: String.fromCodePoint(0xF035B),
+            category: "system",
             defaultWidth: 180,
             defaultHeight: 130,
             defaultVariant: "default",
@@ -760,6 +922,7 @@ QtObject {
         "ram": {
             name: I18n.t("quickactions.systemusage.ram"),
             icon: String.fromCodePoint(0xF035C),
+            category: "system",
             defaultWidth: 180,
             defaultHeight: 130,
             defaultVariant: "default",
@@ -772,6 +935,7 @@ QtObject {
         "temp": {
             name: I18n.t("quickactions.systemusage.temp"),
             icon: String.fromCodePoint(0xF050F),
+            category: "system",
             defaultWidth: 180,
             defaultHeight: 130,
             defaultVariant: "default",
@@ -784,6 +948,7 @@ QtObject {
         "disk": {
             name: I18n.t("quickactions.systemusage.disk"),
             icon: String.fromCodePoint(0xF02CA),
+            category: "system",
             defaultWidth: 180,
             defaultHeight: 130,
             defaultVariant: "default",
@@ -796,6 +961,7 @@ QtObject {
         "battery": {
             name: I18n.t("widgets.types.battery"),
             icon: String.fromCodePoint(0xF0079),
+            category: "system",
             defaultWidth: 260,
             defaultHeight: 90,
             defaultVariant: "default",
@@ -808,6 +974,7 @@ QtObject {
         "github": {
             name: typeof I18n !== "undefined" ? I18n.t("widgets.types.github", "GitHub") : "GitHub",
             icon: String.fromCodePoint(0xF02A4),
+            category: "info",
             defaultWidth: 540,
             defaultHeight: 180,
             defaultVariant: "default",
@@ -818,12 +985,65 @@ QtObject {
         "notes": {
             name: typeof I18n !== "undefined" ? I18n.t("widgets.types.notes", "Notes") : "Notes",
             icon: String.fromCodePoint(0xF039E),
+            category: "time",
             defaultWidth: 300,
             defaultHeight: 280,
             defaultVariant: "default",
             variants: {
                 "default": { file: "faces/notes/NotesFace.qml", icon: "1", label: typeof I18n !== "undefined" ? I18n.t("widgets.variants.default", "Default") : "Default" }
             }
+        },
+        "timer": {
+            name: I18n.t("quickactions.tabs.timer", "Timer"),
+            icon: String.fromCodePoint(0xF051B),
+            category: "time",
+            defaultWidth: 360,
+            defaultHeight: 280,
+            defaultVariant: "timer",
+            variants: {
+                "timer":     { file: "faces/timer/TimerFaceTimer.qml",     icon: "1", label: I18n.t("quickactions.timer.tabs.timer", "Timer") },
+                "stopwatch": { file: "faces/timer/TimerFaceStopwatch.qml", icon: "2", label: I18n.t("quickactions.timer.tabs.stopwatch", "Stopwatch") },
+                "pomodoro":  { file: "faces/timer/TimerFacePomodoro.qml",  icon: "3", label: I18n.t("quickactions.timer.tabs.pomodoro", "Pomodoro") }
+            }
+        },
+        "text": {
+            name: I18n.t("widgets.types.text", "Text"),
+            icon: String.fromCodePoint(0xF0284),
+            category: "time",
+            defaultWidth: 320,
+            defaultHeight: 90,
+            defaultVariant: "default",
+            variants: {
+                "default": { file: "faces/text/TextFace.qml", icon: "1", label: I18n.t("widgets.variants.default", "Default") }
+            },
+            additionalSettings: [
+                {
+                    id: "textContent",
+                    name: I18n.t("widgets.settings.textContent", "Text"),
+                    icon: String.fromCodePoint(0xF0284),
+                    iconFontSize: 16,
+                    action: "textContent",
+                    type: "custom",
+                    row: "bottom",
+                    property: "textContent",
+                    accentColor: "surface0",
+                    textColor: "mauve",
+                    component: registry.textContentInputComponent
+                },
+                {
+                    id: "fontFamily",
+                    name: I18n.t("guide.theme.font.title", "Font"),
+                    icon: String.fromCodePoint(0xF0284),
+                    iconFontSize: 16,
+                    action: "fontFamily",
+                    type: "custom",
+                    row: "top",
+                    property: "fontFamily",
+                    accentColor: "surface0",
+                    textColor: "mauve",
+                    component: registry.textFontComponent
+                }
+            ]
         }
     })
 

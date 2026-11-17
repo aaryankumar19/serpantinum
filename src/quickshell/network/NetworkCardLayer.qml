@@ -266,7 +266,7 @@ Item {
                     }
                 } else {
                     let sec = typeof security !== "undefined" && security ? security.trim().toLowerCase() : "";
-                    let isSecure = sec !== "" && sec !== "open" && sec !== "--" && sec !== "none";
+                    let isSecure = sec !== "" && sec !== "open" && sec !== "owe" && sec !== "--" && sec !== "none";
                     let isSaved = false;
                     if (window.wifiDevice && window.wifiDevice.networks) {
                         let nets = window.wifiDevice.networks.values;
@@ -356,7 +356,7 @@ Item {
                             font.pixelSize: window.s(18)
                             color: dynamicTextColor
                             anchors.verticalCenter: parent.verticalCenter
-                            Behavior on color { enabled: window.visible; ColorAnimation { duration: 200 } }
+                            Behavior on color { enabled: window.visible; ColorAnimation { duration: 250 } }
                         }
 
                         MarqueeText {
@@ -371,7 +371,7 @@ Item {
                             marqueeSpacing: window.s(30)
                             active: window.visible
 
-                            Behavior on color { enabled: window.visible; ColorAnimation { duration: 200 } }
+                            Behavior on color { enabled: window.visible; ColorAnimation { duration: 250 } }
                         }
                     }
                 }

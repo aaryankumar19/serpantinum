@@ -8,6 +8,8 @@ Item {
     id: root
     anchors.fill: parent
 
+    property bool previewMode: false
+
     property real minWidth: 30
     property real minHeight: 30
     property real maxWidth: 4000
@@ -25,7 +27,7 @@ Item {
         radius: ThemeBackend.borderRadius !== undefined ? ThemeBackend.borderRadius : 12
         antialiasing: true
 
-        AnimatedImage {
+        BoundedImage {
             id: srcImage
             anchors.fill: parent
             source: root.imagePath !== "" ? (root.imagePath.startsWith("file://") ? root.imagePath : "file://" + root.imagePath) : ""
@@ -33,8 +35,8 @@ Item {
             asynchronous: true
             cache: true
             smooth: true
-            mipmap: true
             antialiasing: true
+            allowAnimation: true
             playing: true
             visible: false
         }

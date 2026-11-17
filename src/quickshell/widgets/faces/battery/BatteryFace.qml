@@ -10,6 +10,8 @@ Item {
     anchors.fill: parent
     clip: true
 
+    property bool previewMode: false
+
     property real minWidth: 160
     property real minHeight: 60
     property real maxWidth: 600
@@ -115,8 +117,6 @@ Item {
         anchors.fill: parent
         color: Qt.alpha(ThemeBackend.surface0, ThemeBackend.elementOpacity)
         radius: ThemeBackend.borderRadius
-        border.width: 1
-        border.color: Qt.rgba(ThemeBackend.text.r, ThemeBackend.text.g, ThemeBackend.text.b, 0.06)
         clip: true
 
         WallpaperBlur {

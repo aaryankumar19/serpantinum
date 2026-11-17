@@ -13,6 +13,8 @@ Item {
     id: root
     anchors.fill: parent
 
+    property bool previewMode: false
+
     property real minWidth: 150
     property real minHeight: 64
     property real maxWidth: 800
@@ -41,10 +43,10 @@ Item {
     function updateSubscription() {
         if (isVisVisible && !isSubscribed) {
             isSubscribed = true;
-            Cava.registerConsumer();
+            Spectrum.registerConsumer();
         } else if (!isVisVisible && isSubscribed) {
             isSubscribed = false;
-            Cava.unregisterConsumer();
+            Spectrum.unregisterConsumer();
         }
     }
 
@@ -70,7 +72,7 @@ Item {
     Component.onDestruction: {
         if (isSubscribed) {
             isSubscribed = false;
-            Cava.unregisterConsumer();
+            Spectrum.unregisterConsumer();
         }
     }
 
@@ -150,8 +152,6 @@ Item {
                 height: width
                 radius: ThemeBackend.borderRadius
                 color: Qt.alpha(ThemeBackend.surface1, ThemeBackend.elementOpacity)
-                border.width: 1
-                border.color: (root.isMediaActive && MprisController.isPlaying) ? ThemeBackend.mauve : ThemeBackend.surface1
                 visible: root.showArt
 
                 Text {
@@ -180,13 +180,13 @@ Item {
                         maskSource: artMask
                     }
 
-                    Image {
+                    BoundedImage {
                         id: artImg
                         anchors.fill: parent
                         source: (root.isMediaActive && MprisController.artUrl) ? (MprisController.artUrl.startsWith("file://") || MprisController.artUrl.startsWith("http") ? MprisController.artUrl : "file://" + MprisController.artUrl) : ""
                         fillMode: Image.PreserveAspectCrop
                         opacity: (root.isMediaActive && status === Image.Ready && MprisController.artUrl !== "") ? 1.0 : 0.0
-                        Behavior on opacity { NumberAnimation { duration: 300 } }
+                        Behavior on opacity { NumberAnimation { duration: 250 } }
                     }
                 }
             }

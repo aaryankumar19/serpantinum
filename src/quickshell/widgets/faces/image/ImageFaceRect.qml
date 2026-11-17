@@ -8,6 +8,8 @@ Item {
     anchors.fill: parent
     clip: true
 
+    property bool previewMode: false
+
     property real minWidth: 30
     property real minHeight: 30
     property real maxWidth: 4000
@@ -23,7 +25,7 @@ Item {
         color: root.imagePath === "" ? ThemeBackend.surface0 : "transparent"
         clip: true
 
-        AnimatedImage {
+        BoundedImage {
             id: srcImage
             anchors.fill: parent
             source: root.imagePath !== "" ? (root.imagePath.startsWith("file://") ? root.imagePath : "file://" + root.imagePath) : ""
@@ -31,8 +33,8 @@ Item {
             asynchronous: true
             cache: true
             smooth: true
-            mipmap: true
             antialiasing: true
+            allowAnimation: true
             playing: true
             visible: status === Image.Ready
         }

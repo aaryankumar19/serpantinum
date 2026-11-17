@@ -6,6 +6,8 @@ Item {
     anchors.fill: parent
     clip: true
 
+    property bool previewMode: false
+
     property real minWidth: 100
     property real minHeight: 100
     property real maxWidth: 800
@@ -62,7 +64,7 @@ Item {
             id: headAnim
             target: root
             property: "secondHeadAngle"
-            duration: 320
+            duration: 250
             easing.type: Easing.OutCubic
         }
 
@@ -72,7 +74,7 @@ Item {
                 id: tailAnim
                 target: root
                 property: "secondTailAngle"
-                duration: 320
+                duration: 250
                 easing.type: Easing.OutCubic
             }
         }
@@ -86,8 +88,9 @@ Item {
     Timer {
         id: clockTimer
         interval: Math.max(20, 1000 - (new Date()).getMilliseconds())
-        running: true
+        running: root.visible
         repeat: true
+        triggeredOnStart: true
         onTriggered: {
             var now = new Date();
             root.currentTime = now;
@@ -196,7 +199,7 @@ Item {
 
             Behavior on rotation {
                 RotationAnimation {
-                    duration: 350
+                    duration: 400
                     direction: RotationAnimation.Clockwise
                     easing.type: Easing.OutCubic
                 }
@@ -222,7 +225,7 @@ Item {
 
             Behavior on rotation {
                 RotationAnimation {
-                    duration: 350
+                    duration: 400
                     direction: RotationAnimation.Clockwise
                     easing.type: Easing.OutCubic
                 }

@@ -9,6 +9,7 @@ RAW_SLUG="${REPO_SLUG:-ilyamiro/serpantinum}"
 REPO_SLUG="$(printf '%s' "$RAW_SLUG" | tr -d '\r\n\t ' | sed 's/[^a-zA-Z0-9_\/-]//g')"
 CACHE_BASE="${XDG_CACHE_HOME:-$HOME/.cache}/serpantinum-installer"
 export REPO_SLUG
+export SERPANTINUM_INSTALLER=1
 
 if [ -n "${BASH_SOURCE[0]}" ] && [ -f "${BASH_SOURCE[0]}" ]; then
     INSTALL_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
@@ -20,10 +21,19 @@ fi
 
 if [[ -z "$PROJECT_ROOT" || ! -f "$PROJECT_ROOT/install/modules/deps.sh" || ! -d "$PROJECT_ROOT/src" ]]; then
     if ! command -v git &>/dev/null; then
-        if command -v pacman &>/dev/null; then
+        OS_IDS=" $(awk -F= '/^(ID|ID_LIKE)=/{gsub(/"/, "", $2); printf "%s ", $2}' /etc/os-release 2>/dev/null)"
+        if [[ "$OS_IDS" == *" fedora "* ]] && command -v dnf &>/dev/null; then
+            sudo dnf install -y git
+        elif [[ "$OS_IDS" == *" void "* ]] && command -v xbps-install &>/dev/null; then
+            sudo xbps-install -Suy xbps || true
+            sudo xbps-install -Sy git
+        elif command -v pacman &>/dev/null; then
             sudo pacman -Sy --noconfirm --needed git
         elif command -v dnf &>/dev/null; then
             sudo dnf install -y git
+        elif command -v xbps-install &>/dev/null; then
+            sudo xbps-install -Suy xbps || true
+            sudo xbps-install -Sy git
         fi
     fi
     if [ ! -d "$CACHE_BASE/.git" ]; then
@@ -47,6 +57,11 @@ MODULES_DIR="$INSTALL_DIR/modules"
 source "$PROJECT_ROOT/src/scripts/i18n.sh"
 source "$MODULES_DIR/pm.sh"
 source "$MODULES_DIR/deps.sh"
+source "$MODULES_DIR/ski.sh"
+source "$MODULES_DIR/daemons.sh"
+source "$MODULES_DIR/audio.sh"
+source "$MODULES_DIR/gamma.sh"
+source "$MODULES_DIR/core.sh"
 source "$MODULES_DIR/state.sh"
 source "$MODULES_DIR/migrate.sh"
 source "$MODULES_DIR/deploy.sh"
@@ -57,6 +72,9 @@ source "$MODULES_DIR/ui.sh"
 
 TELEMETRY_ID=$(get_telemetry_id)
 ENABLE_TELEMETRY=$(get_telemetry_enabled)
+OPT_SDDM=$(get_saved_preference OPT_SDDM "$OPT_SDDM")
+SDDM_WAYLAND=$(get_saved_preference SDDM_WAYLAND "$SDDM_WAYLAND")
+INSTALL_FULL_WALLPAPERS=$(get_saved_preference INSTALL_FULL_WALLPAPERS "$INSTALL_FULL_WALLPAPERS")
 
 check_supported_os
 bootstrap_installer_deps
@@ -84,6 +102,10 @@ elif [[ "$INSTALL_STATE" == "fresh" || "$IS_REINSTALL" == true ]]; then
 fi
 
 install_dependencies "$INSTALL_STATE" "$IS_REINSTALL" "${SELECTED_COMPOSITORS[@]}"
+install_ski
+install_audio_daemon
+install_gamma_daemon
+install_core_daemon
 
 deploy_package "$PROJECT_ROOT" "$OLD_COMMIT" "$TARGET_COMMIT" "$IS_REINSTALL" "$INSTALL_STATE" "${SELECTED_COMPOSITORS[@]}"
 setup_sddm "$PROJECT_ROOT" "$INSTALL_STATE" "$IS_REINSTALL"
@@ -91,15 +113,17 @@ install_wallpapers "$INSTALL_FULL_WALLPAPERS"
 
 WALLPAPER_DIR=$(get_wallpaper_dir)
 init_serpantinum_config "$PROJECT_ROOT" "$WALLPAPER_DIR" "$INSTALL_STATE" "$IS_REINSTALL"
+configure_ski_defaults
 
 setup_services
-write_version_state "$TARGET_VERSION" "$TARGET_COMMIT" "$TELEMETRY_ID" "$ENABLE_TELEMETRY" "${SELECTED_COMPOSITORS[*]}"
+hand_over_from_easyeffects
+write_version_state "$TARGET_VERSION" "$TARGET_COMMIT" "$TELEMETRY_ID" "$ENABLE_TELEMETRY" "${SELECTED_COMPOSITORS[*]}" "$OPT_SDDM" "$SDDM_WAYLAND" "$INSTALL_FULL_WALLPAPERS"
 
 if [[ "$INSTALL_STATE" == "legacy" || "$INSTALL_STATE" == "fresh" || "$IS_REINSTALL" == true ]]; then
     rm -f "$HOME/.local/state/serpantinum/first_launch.done" "$HOME/.local/state/quickshell/first_launch.done"
 fi
 
-if [ -f "$MODULES_DIR/telemetry.sh" ]; then
+if [ "$ENABLE_TELEMETRY" = true ] && [ -f "$MODULES_DIR/telemetry.sh" ]; then
     bash "$MODULES_DIR/telemetry.sh" --mode done --version "$TARGET_VERSION" --old-version "$OLD_VERSION" --install-state "$INSTALL_STATE" --compositor "${SELECTED_COMPOSITORS[*]}" --id "$TELEMETRY_ID" --enabled "$ENABLE_TELEMETRY" --failed "${FAILED_PKGS[*]}"
 fi
 

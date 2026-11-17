@@ -3,7 +3,7 @@
     "language": "en",
     "avatarPath": "",
     "muteSfx": false,
-    "weatherInterval": 15,
+    "weatherInterval": 30,
     "weatherUnit": "metric"
   },
   "syspanel": {
@@ -51,7 +51,8 @@
     "fontFamily": "Adwaita Mono",
     "borderRadius": 10,
     "activePreset": "Matugen",
-    "matugen": true
+    "matugen": true,
+    "mode": "dark"
   },
   "idle": {
     "enabled": true,
@@ -134,8 +135,8 @@
       {
         "name": "Files",
         "comment": "Access and organize files",
-        "desktop_id": "org.gnome.Nautilus",
-        "icon": "org.gnome.Nautilus"
+        "desktop_id": "ski",
+        "icon": "ski"
       }
     ],
     "overrideBoundsCorrection": false,
